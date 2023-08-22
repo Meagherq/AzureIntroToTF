@@ -31,7 +31,7 @@ module "resource_group" {
 }
 
 # App Service Plan
-module "parata_asp" {
+module "asp" {
     source = "../../modules/azurerm/app_service_plan"
 
     name = "ASP-IT-${var.environment_prefix}-${var.initials}"
@@ -41,13 +41,13 @@ module "parata_asp" {
 }
 
 # App Service
-module "parata-as" {
+module "as" {
     source = "../../modules/azurerm/app_service"
 
     name = "AS-IT-${var.environment_prefix}-${var.initials}"
     location = module.resource_group.location
     resource_group_name = module.resource_group.name
-    app_service_plan_id = module.parata_asp.id
+    app_service_plan_id = module.asp.id
 }
 
 # App Service Deployment Slots
