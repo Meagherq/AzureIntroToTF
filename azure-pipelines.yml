@@ -36,7 +36,7 @@ stages:
            displayName: 'Copy Terraform Files'
            inputs:
              SourceFolder: '$(Pipeline.Workspace)/drop'
-             TargetFolder: '$(System.DefaultWorkingDirectory)/environments/dev'
+             TargetFolder: '$(System.DefaultWorkingDirectory)'
          - script: 'printf ''terraform {  \nbackend "azurerm" {  \nstorage_account_name="tfprereq" \ncontainer_name="tfstate" \nkey="dev.terraform.tfstate" \nresource_group_name="tfprereq" \naccess_key="$(StorageAccessKey)"\n}\n}'' > $(System.DefaultWorkingDirectory)/evironments/dev/backend.tf'
            displayName: 'Setup Backend Config'
          - task: Docker@1
@@ -87,7 +87,7 @@ stages:
            displayName: 'Copy Terraform Files'
            inputs:
              SourceFolder: '$(Pipeline.Workspace)/drop'
-             TargetFolder: '$(System.DefaultWorkingDirectory)/environments/dev'
+             TargetFolder: '$(System.DefaultWorkingDirectory)'
          - script: 'printf ''terraform {  \nbackend "azurerm" {  \nstorage_account_name="tfprereq" \ncontainer_name="tfstate" \nkey="dev.terraform.tfstate" \nresource_group_name="tfprereq" \naccess_key="$(StorageAccessKey)"\n}\n}'' > $(System.DefaultWorkingDirectory)/evironments/dev/backend.tf'
            displayName: 'Setup Backend Config'
          - task: Docker@1
@@ -138,8 +138,8 @@ stages:
            displayName: 'Copy Terraform Files'
            inputs:
              SourceFolder: '$(Pipeline.Workspace)/drop'
-             TargetFolder: '$(System.DefaultWorkingDirectory)/environments/dev'
-         - script: 'printf ''terraform {  \nbackend "azurerm" {  \nstorage_account_name="tfprereq" \ncontainer_name="tfstate" \nkey="dev.terraform.tfstate" \nresource_group_name="tfprereq" \naccess_key="$(StorageAccessKey)"\n}\n}'' > $(System.DefaultWorkingDirectory)/evironments/dev/backend.tf'
+             TargetFolder: '$(System.DefaultWorkingDirectory)'
+         - script: 'printf ''terraform {  \nbackend "azurerm" {  \nstorage_account_name="tfprereq" \ncontainer_name="tfstate" \nkey="prod.terraform.tfstate" \nresource_group_name="tfprereq" \naccess_key="$(StorageAccessKey)"\n}\n}'' > $(System.DefaultWorkingDirectory)/evironments/prod/backend.tf'
            displayName: 'Setup Backend Config'
          - task: Docker@1
            displayName: 'Terraform Init'
@@ -153,7 +153,7 @@ stages:
               ARM_CLIENT_SECRET=$(terraform-key)
               ARM_SUBSCRIPTION_ID=$(env-subscription-id)
               ARM_TENANT_ID=$(tenant-id)
-             workingDirectory: '/code/environments/dev'
+             workingDirectory: '/code/environments/prod'
              containerCommand: 'init -no-color'
              runInBackground: false
          - task: Docker@1
@@ -168,7 +168,7 @@ stages:
               ARM_CLIENT_SECRET=$(terraform-key)
               ARM_SUBSCRIPTION_ID=$(env-subscription-id)
               ARM_TENANT_ID=$(tenant-id)
-             workingDirectory: '/code/environments/dev'
+             workingDirectory: '/code/environments/prod'
              containerCommand: 'plan -out=output'
              runInBackground: false
 - stage: 'DeployProd'
@@ -189,7 +189,7 @@ stages:
            displayName: 'Copy Terraform Files'
            inputs:
              SourceFolder: '$(Pipeline.Workspace)/drop'
-             TargetFolder: '$(System.DefaultWorkingDirectory)/environments/dev'
+             TargetFolder: '$(System.DefaultWorkingDirectory)'
          - script: 'printf ''terraform {  \nbackend "azurerm" {  \nstorage_account_name="tfprereq" \ncontainer_name="tfstate" \nkey="dev.terraform.tfstate" \nresource_group_name="tfprereq" \naccess_key="$(StorageAccessKey)"\n}\n}'' > $(System.DefaultWorkingDirectory)/evironments/dev/backend.tf'
            displayName: 'Setup Backend Config'
          - task: Docker@1
@@ -204,7 +204,7 @@ stages:
               ARM_CLIENT_SECRET=$(terraform-key)
               ARM_SUBSCRIPTION_ID=$(env-subscription-id)
               ARM_TENANT_ID=$(tenant-id)
-             workingDirectory: '/code/environments/dev'
+             workingDirectory: '/code/environments/prod'
              containerCommand: 'init -no-color'
              runInBackground: false
          - task: Docker@1
@@ -219,6 +219,6 @@ stages:
               ARM_CLIENT_SECRET=$(terraform-key)
               ARM_SUBSCRIPTION_ID=$(env-subscription-id)
               ARM_TENANT_ID=$(tenant-id)
-             workingDirectory: '/code/environments/dev'
+             workingDirectory: '/code/environments/prod'
              containerCommand: 'apply -auto-approve -no-color'
              runInBackground: false
