@@ -1,5 +1,5 @@
 variable environment_prefix {
-    default = "DEV"
+    default = "TEST"
 }
 
 variable student_number {

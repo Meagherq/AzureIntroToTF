@@ -22,7 +22,7 @@ data "azurerm_resource_group" "rg" {
 module "asp" {
     source = "../../modules/azurerm/app_service_plan"
 
-    name = "pul-yaml-asp-${var.student_number}"
+    name = "pusp-${var.student_number}"
     resource_group_name = data.azurerm_resource_group.rg.name
     location = data.azurerm_resource_group.rg.location
     sku_name = "S1"
