@@ -178,7 +178,7 @@ stages:
     displayName: 'Prod Deploy'
     pool:
       vmImage: 'ubuntu-20.04'
-    environment: 'Dev'
+    environment: 'Prod'
     strategy:
      runOnce:
        deploy:
