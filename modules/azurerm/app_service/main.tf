@@ -15,6 +15,7 @@ resource "azurerm_windows_web_app" "app" {
   identity {
     type = "SystemAssigned"
   }
+  
 }
 
 # Application Insights

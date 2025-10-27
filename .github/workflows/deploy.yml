@@ -1,0 +1,30 @@
+name: Test Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      json_data: 
+        type: string
+        description: "JSON formatted string with all required inputs"
+        required: true
+
+env:
+  JSON_DATA : ${{ inputs.json_data }}
+
+jobs:
+  # Development Environment
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: 
+      name: Development
+    
+    steps:
+      - name: set inputs as variables
+        run: |
+          echo -e "TF_image_publisher=$(echo $JSON_DATA | jq ".image_publisher")" >> $GITHUB_ENV
+          echo -e "TF_image_offer=$(echo $JSON_DATA | jq ".image_offer")" >> $GITHUB_ENV
+      
+      - name: Print env
+        run: |
+          echo "TF_image_publisher= ${{ env.TF_image_publisher }}"
+          echo "TF_image_offer= ${{ env.TF_image_offer }}"
