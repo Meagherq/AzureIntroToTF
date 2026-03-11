@@ -1,1 +1,105 @@
+name: "Debug Federated Managed Identity Auth"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # Required to request the GitHub OIDC token
+  contents: read
+
+env:
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}       # The Client ID of the User-Assigned Managed Identity
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1 – Manual CURL-based federation (debug)
+  # ──────────────────────────────────────────────
+  debug-curl-auth:
+    name: "Debug – CURL Federated Token Exchange"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get GitHub OIDC token
+        id: oidc
+        run: |
+          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq -r '.value')
+
+          if [ -z "$OIDC_TOKEN" ] || [ "$OIDC_TOKEN" = "null" ]; then
+            echo "::error::Failed to retrieve GitHub OIDC token"
+            exit 1
+          fi
+
+          echo "::add-mask::$OIDC_TOKEN"
+          echo "oidc_token=$OIDC_TOKEN" >> "$GITHUB_OUTPUT"
+          echo "✅ Successfully obtained GitHub OIDC token"
+
+      - name: Exchange OIDC token for Azure access token via CURL
+        id: azure_token
+        run: |
+          echo "🔄 Exchanging GitHub OIDC token for Azure AD access token..."
+
+          RESPONSE=$(curl -s -X POST \
+            "https://login.microsoftonline.com/${{ env.AZURE_TENANT_ID }}/oauth2/v2.0/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=${{ env.AZURE_CLIENT_ID }}" \
+            -d "scope=https://management.azure.com/.default" \
+            -d "grant_type=client_credentials" \
+            -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
+            -d "client_assertion=${{ steps.oidc.outputs.oidc_token }}")
+
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "::error::Token exchange failed. Response:"
+            echo "$RESPONSE" | jq .
+            exit 1
+          fi
+
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+          echo "✅ Successfully obtained Azure access token"
+
+      - name: Call Azure Resource Manager API via CURL
+        run: |
+          echo "📡 Querying Azure subscriptions to verify authentication..."
+
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ steps.azure_token.outputs.access_token }}" \
+            "https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}?api-version=2022-12-01")
+
+          echo "$RESPONSE" | jq .
+
+          SUB_STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$SUB_STATE" = "Enabled" ]; then
+            echo "✅ Authentication verified – subscription '${{ env.AZURE_SUBSCRIPTION_ID }}' is accessible"
+          else
+            echo "::error::Could not verify subscription access"
+            exit 1
+          fi
+
+  # ──────────────────────────────────────────────
+  # Job 2 – Azure CLI login via azure/login action
+  # ──────────────────────────────────────────────
+  azure-cli-auth:
+    name: "Azure CLI – Federated Login"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Azure using Federated Credentials
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify Azure CLI session
+        run: |
+          echo "🔍 Verifying Azure CLI authentication..."
+          az account show --output table
+          echo ""
+          echo "📋 Listing resource groups..."
+          az group list --output table
 
